@@ -1,62 +1,41 @@
-cmake_minimum_required(VERSION 3.0.0...3.5.0)
-project(rayscene)
+cmake_minimum_required(VERSION 3.14...3.50)
+project(
+  Stager
+  VERSION 1.0.0
+  DESCRIPTION ""
+  HOMEPAGE_URL ""
+  LANGUAGES C CXX)
 
-# Avoid excessive expansion of variables in conditionals. In particular, if
-# "PLATFORM" is "DRM" then:
-#
-# if (${PLATFORM} MATCHES "DRM")
-#
-# may expand e.g to:
-#
-# if (/usr/lib/aarch64-linux-gnu/libdrm.so MATCHES "DRM")
-#
-# See https://cmake.org/cmake/help/latest/policy/CMP0054.html
-cmake_policy(SET CMP0054 NEW)
+set(STAGER_TARGET "Stager")
+set(STAGER_SOURCE_DIR ${CMAKE_CURRENT_LIST_DIR}/Source)
+set(STAGER_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR}/Include/Stager)
 
-# Makes a hidden visibility preset on a static lib respected
-# This is used to hide glfw's symbols from the library exports when building an so/dylib
-# See https://cmake.org/cmake/help/latest/policy/CMP0063.html
-cmake_policy(SET CMP0063 NEW)
+set(STAGER_SOURCES
+    ${STAGER_INCLUDE_DIR}/Exceptions/DuplicateStageException.hh
+    ${STAGER_INCLUDE_DIR}/Exceptions/NonExistentStageException.hh
+    ${STAGER_INCLUDE_DIR}/Costume.hh
+    ${STAGER_INCLUDE_DIR}/Stage.hh
+    ${STAGER_INCLUDE_DIR}/Theatre.hh
+    ${STAGER_INCLUDE_DIR}/Actor.hh
+    ${STAGER_SOURCE_DIR}/Stage.cc
+    ${STAGER_SOURCE_DIR}/Actor.cc
+    ${STAGER_SOURCE_DIR}/Costume.cc
+    ${STAGER_SOURCE_DIR}/Theatre.cc)
 
-# Directory for easier includes
-# Anywhere you see include(...) you can check <root>/cmake for that file
-set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+add_library(${STAGER_TARGET} INTERFACE)
+add_library(${STAGER_TARGET}::${STAGER_TARGET} ALIAS ${STAGER_TARGET})
 
-# Sets compiler flags and language standard
-include(CompilerFlags)
+target_sources(${STAGER_TARGET} INTERFACE ${STAGER_SOURCES})
+target_include_directories(${STAGER_TARGET} INTERFACE ${STAGER_INCLUDE_DIR}/../)
+set_target_properties(
+  ${STAGER_TARGET}
+  PROPERTIES C_STANDARD 17
+             C_STANDARD_REQUIRED ON
+             C_EXTENSIONS ON
+             CXX_STANDARD 17
+             CXX_STANDARD_REQUIRED ON
+             CXX_EXTENSIONS ON)
 
-# Registers build options that are exposed to cmake
-include(${CMAKE_CURRENT_LIST_DIR}/CMakeOptions.cmake)
-
-# RAYLIB_IS_MAIN determines whether the project is being used from root
-# or if it is added as a dependency (through add_subdirectory for example).
-if ("${CMAKE_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_SOURCE_DIR}")
-  set(RAYSCENE_IS_MAIN ON)
-else()
-  set(RAYSCENE_IS_MAIN OFF)
-endif()
-
-#Ensure that raylib is install.
-if(NOT MY_RAYLIB)
-    find_package(raylib QUIET)
-    if (NOT raylib_FOUND)
-        include(FetchContent)
-        FetchContent_Declare(
-            raylib
-            GIT_REPOSITORY https://github.com/raysan5/raylib.git
-            GIT_TAG 5.0
-            GIT_SHALLOW 1
-        )
-        FetchContent_MakeAvailable(raylib)
-    endif()
-else()
-    find_package(raylib REQUIRED)
-endif()
-
-# Main sources directory (the second parameter sets the output directory name to raylib)
-add_subdirectory(src rayscene)
-
-if (${BUILD_EXAMPLES})
-  MESSAGE(STATUS "Building examples is enabled")
-  add_subdirectory(examples)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/playground)
 endif()
